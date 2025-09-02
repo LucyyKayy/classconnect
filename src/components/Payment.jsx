@@ -1,30 +1,44 @@
-// src/components/Payment.jsx
-import React, { useEffect } from "react";
+import React, { useState } from "react";
 
 export default function Payment() {
-  useEffect(() => {
-    if (!window.IntaSend) return;
+  const [loading, setLoading] = useState(false);
 
-    // Initialize IntaSend (sandbox mode)
-    new window.IntaSend({
-      publicAPIKey: import.meta.env.VITE_INTASEND_API_KEY,
-      live: false, // sandbox
-    })
-      .on("COMPLETE", (resp) => console.log("Payment Complete:", resp))
-      .on("FAILED", (err) => console.error("Payment Failed:", err))
-      .on("IN-PROGRESS", () => console.log("Payment In Progress"));
-  }, []);
+  const handlePay = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch("/api/pay", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: "Lucy",
+          lastName: "Kayy",
+          email: "lucyy@example.com",
+          phone: "254712345678",
+          amount: 100
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.invoice_url) {
+        window.location.href = data.invoice_url; // Redirect to IntaSend checkout
+      } else {
+        alert("❌ Payment failed");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error creating payment");
+    }
+    setLoading(false);
+  };
 
   return (
-    <div className="p-4 rounded-xl shadow bg-white">
-      <button
-        className="intaSendPayButton bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition"
-        data-amount="10"   // KES
-        data-currency="KES"
-        data-email="student@classconnect.com"
-      >
-        Pay KES 10
-      </button>
-    </div>
+    <button
+      onClick={handlePay}
+      disabled={loading}
+      className="bg-green-600 text-white px-6 py-2 rounded-lg shadow-lg"
+    >
+      {loading ? "Processing..." : "Pay with IntaSend"}
+    </button>
   );
 }
